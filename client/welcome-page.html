@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Welcome on board</title>
+  <style>
+    body{
+      background-color: aliceblue;
+    }
+    .container{
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+  <h2 style="text-align: center">Ready for Chat?</h2>
+  <div class="container">
+    <input id="name" placeholder="type your nick name">
+    <button id="go" disabled=true>Go</button>
+  </div>
+</body>
+</html>
+<script>
+  (() => {
+    const buttonEl = document.querySelector('#go');
+    const inputEl = document.querySelector('#name');
+
+    inputEl.addEventListener('keyup', ($event) => {
+      buttonEl.disabled = !$event.target.value.length > 0;
+    })
+
+    buttonEl.addEventListener('click', () => {
+      const url = '/chat';
+      sessionStorage.setItem('nickName', inputEl.value);
+      window.location.assign(url);
+    });
+  })();
+</script>
