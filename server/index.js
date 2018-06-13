@@ -20,6 +20,7 @@ app.get('/chat', (req, res) => {
 
 var namespace = io.of('/chat');
 var userlist = [];
+var messages = [];
 namespace.on('connection', function (socket) {
   // broadcast new user
   socket.on('new user', function (username) {
@@ -27,18 +28,36 @@ namespace.on('connection', function (socket) {
       userlist.push(username);
     }
     socket.name = username;
-
-    socket.broadcast.emit('welcome new user', 'Welcome onboard ' + username);
+    // on-board information
+    socket.broadcast.emit('welcome message', 'Welcome onboard ' + username);
+    // update user list
     namespace.emit('user list', JSON.stringify(userlist));
+    // send history messages to new user
+    messages.slice(-5).forEach(msg => {
+      socket.emit('history messages', msg.user + ': ' + msg.message);
+    });
   });
+
+  // new message
+  socket.on('new message', function(msg) {
+    const newMsg = JSON.parse(msg);
+    messages.push(newMsg);
+    socket.broadcast.emit('propagate new message', newMsg.user + ': ' + newMsg.message);
+  });
+
+  // someone is typing
+  socket.on('typing', function(user){
+    socket.broadcast.emit('typing notification', user + ' is typing...');
+  });
+
   // user offboard
   socket.on('disconnect', function () {
-    namespace.emit('goodbye', socket.name + ' is offboard');
+    socket.broadcast.emit('goodbye message', socket.name + ' is offboard');
     // update the user list
     if (userlist.includes(socket.name)) {
       userlist.splice(userlist.indexOf(socket.name), 1);
     }
-    namespace.emit('user list', JSON.stringify(userlist));
+    socket.broadcast.emit('user list', JSON.stringify(userlist));
   });
 });
 

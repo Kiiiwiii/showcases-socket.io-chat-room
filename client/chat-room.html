@@ -46,8 +46,9 @@
       const userListContainer = document.querySelector('#userList');
       const formEl = document.forms[0];
       const inputEl = document.querySelector('#m');
-      const messagesUl = document.querySelector('#messages');
+      const messageContainer = document.querySelector('#messages');
       const notifyEl = document.querySelector('#notification');
+
       function updateNotification(message) {
         notifyEl.innerHTML = message;
         notifyEl.style.opacity = 1;
@@ -55,18 +56,28 @@
           notifyEl.style.opacity = 0;
         }, 1000);
       }
+
+      function appendNewMessage(message, self) {
+        const liEl = document.createElement('li');
+        liEl.innerHTML = message;
+        if (self) {
+          liEl.style.color = 'red';
+        }
+        messageContainer.appendChild(liEl);
+      }
       // new user connected
       const socket = io('/chat');
       socket.emit('new user', username);
 
-      // get response from server
-      socket.on('welcome new user', (msg) => {
+      // 1. get response from server
+        // on/off-board information
+      socket.on('welcome message', (msg) => {
         updateNotification(msg);
       });
-      socket.on('goodbye', (msg) => {
+      socket.on('goodbye message', (msg) => {
         updateNotification(msg);
       });
-
+        // update the userlist
       socket.on('user list', (userlist) => {
         userListContainer.innerHTML = '';
         const parsedList = JSON.parse(userlist);
@@ -75,6 +86,38 @@
           liEl.innerHTML = user;
           userListContainer.appendChild(liEl);
         });
+      });
+        // receive history messages
+      socket.on('history messages', (msg) => {
+        appendNewMessage(msg, false);
+      });
+        // receive new messages
+      socket.on('propagate new message', (msg) => {
+        appendNewMessage(msg, false);
+      });
+        // some one is typing
+      socket.on('typing notification', (msg) => {
+        updateNotification(msg);
+      });
+
+      // 2. send new messages
+      formEl.addEventListener('submit', ($event) => {
+        let newMessage = {};
+        if (inputEl.value) {
+          newMessage.user = username;
+          newMessage.message = inputEl.value;
+          // broadcast the messages to others
+          socket.emit('new message', JSON.stringify(newMessage));
+          // update your own message pannel
+          appendNewMessage('You: ' + inputEl.value, true);
+        }
+        inputEl.value = '';
+        $event.preventDefault();
+      });
+
+      // tell the server someone is typing
+      inputEl.addEventListener('keyup', ($event) => {
+        socket.emit('typing', username);
       });
     }
   })();
