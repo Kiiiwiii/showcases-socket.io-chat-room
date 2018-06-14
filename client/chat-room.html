@@ -6,7 +6,7 @@
       * { margin: 0; padding: 0; box-sizing: border-box; }
       body { font: 13px Helvetica, Arial; }
       form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
-      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+      form input { border: 0; padding: 10px; width: 90%; margin-top: 5px; margin-right: .5%; }
       form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
       #messages { list-style-type: none; margin: 0; padding: 0; }
       #messages li { padding: 5px 10px; }
@@ -32,7 +32,8 @@
     <ul id="userList"></ul>
     <ul id="messages"></ul>
     <form action="">
-      <input id="m" autocomplete="off" /><button>Send</button>
+      <input id="m" autocomplete="off" placeholder="message"/><button>Send</button>
+      <input id="private_m"/ placeholder="username"><button id="private" type="button">Private send</button>
     </form>
   </body>
 
@@ -48,6 +49,9 @@
       const inputEl = document.querySelector('#m');
       const messageContainer = document.querySelector('#messages');
       const notifyEl = document.querySelector('#notification');
+      // for private message
+      const privateBtn = document.querySelector('#private');
+      const privateInputEl = document.querySelector('#private_m');
 
       function updateNotification(message) {
         notifyEl.innerHTML = message;
@@ -57,11 +61,13 @@
         }, 1000);
       }
 
-      function appendNewMessage(message, self) {
+      function appendNewMessage(message, type) {
         const liEl = document.createElement('li');
         liEl.innerHTML = message;
-        if (self) {
+        if (type === 'self') {
           liEl.style.color = 'red';
+        } else if (type === 'private') {
+          liEl.style.color = 'coral';
         }
         messageContainer.appendChild(liEl);
       }
@@ -89,15 +95,19 @@
       });
         // receive history messages
       socket.on('history messages', (msg) => {
-        appendNewMessage(msg, false);
+        appendNewMessage(msg, 'public');
       });
         // receive new messages
       socket.on('propagate new message', (msg) => {
-        appendNewMessage(msg, false);
+        appendNewMessage(msg, 'public');
       });
         // some one is typing
       socket.on('typing notification', (msg) => {
         updateNotification(msg);
+      });
+        // private message
+      socket.on('private message', (msg) => {
+        appendNewMessage(msg, 'private');
       });
 
       // 2. send new messages
@@ -109,7 +119,7 @@
           // broadcast the messages to others
           socket.emit('new message', JSON.stringify(newMessage));
           // update your own message pannel
-          appendNewMessage('You: ' + inputEl.value, true);
+          appendNewMessage('You: ' + inputEl.value, 'self');
         }
         inputEl.value = '';
         $event.preventDefault();
@@ -118,6 +128,15 @@
       // tell the server someone is typing
       inputEl.addEventListener('keyup', ($event) => {
         socket.emit('typing', username);
+      });
+
+      // private message test
+      privateBtn.addEventListener('click', ($event) => {
+        const data = {
+          username: privateInputEl.value,
+          message: inputEl.value
+        };
+        socket.emit('private message', JSON.stringify(data));
       });
     }
   })();

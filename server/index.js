@@ -28,6 +28,8 @@ namespace.on('connection', function (socket) {
       userlist.push(username);
     }
     socket.name = username;
+    // join a room, use for private message
+    socket.join(username);
     // on-board information
     socket.broadcast.emit('welcome message', 'Welcome onboard ' + username);
     // update user list
@@ -58,6 +60,16 @@ namespace.on('connection', function (socket) {
       userlist.splice(userlist.indexOf(socket.name), 1);
     }
     socket.broadcast.emit('user list', JSON.stringify(userlist));
+  });
+
+  // private message test
+  socket.on('private message', function(data) {
+    var dataParsed = JSON.parse(data);
+    if(userlist.includes(dataParsed.username)) {
+      socket.to(dataParsed.username).emit('private message', dataParsed.message);
+    } else {
+      socket.emit('welcome message', 'NO SUCH USER!');
+    }
   });
 });
 
