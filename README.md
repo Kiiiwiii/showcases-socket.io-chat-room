@@ -1,7 +1,7 @@
 ## What is this?
 * A living chat room Exercise
 * Exercise, practice with socket.io + express.js + pure js in front end
-## Which feature has this project ?
+## Which feature does this project have?
 * Broadcast a message to connected users
 * Connects or disconnects notification
 * Add support for nicknames
